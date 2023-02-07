@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <style>
+        body {
+            overflow: hidden;
+        }
+
+        .top {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            background-color: yellowgreen;
+        }
+
+        .top>div {
+            width: 50%;
+        }
+
+        .second-div {
+            padding: 2%;
+            display: flex;
+            flex-direction: row-reverse;
+        }
+
+        .first-div {
+            padding: 2%;
+        }
+
+
+        .parent {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .left-plane {
+            width: 30%;
+            background-color: yellowgreen;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .left-plane>div {
+            padding-left: 3%;
+        }
+
+        .right-pane {
+            padding: 3%;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            overflow-y: scroll;
+            height: 690px;
+        }
+
+        .right-pane>div {
+            width: 100%;
+            background-color: darkgoldenrod;
+            margin-top: 1%;
+            padding: 2%;
+        }
+
+        .send-message {
+            position: fixed;
+            bottom: 0%;
+            width: 100%;
+            background-color: lightblue;
+            padding: 2%;
+        }
+
+        .inner-class {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .first-div {
+            width: 85%;
+            
+        }
+
+        .second-div {
+            width: 20%;
+        }
+    </style>
+</head>
+
+<body onload="retrieveMessages()">
+    <div class="top">
+        <div class="first-div">
+            <h1>Chat App</h1>
+        </div>
+        <div class="second-div">
+            <button type="button" class="btn btn-outline-secondary" onclick="LeaveRoom()">Leave the Room</button>
+        </div>
+    </div>
+    <div class="parent">
+        <div class="left-plane">
+            <div>
+                <h4>Room Name : Node.js</h4>
+            </div>
+            <div class="second-second-div">
+            </div>
+        </div>
+        <div class="right-pane" id="right-pane">
+        </div>
+    </div>
+    <div class="send-message">
+        <div class="inner-class">
+            <div class="first-div">
+
+                <input type="name" class="form-control" id="message" placeholder="Type your message here"
+                    style="width: 100%;">
+            </div>
+            <div class="second-div">
+                <button type="button" class="btn btn-light" style="width: 100%;" onclick="sendMessage()">Send
+                    message</button>
+            </div>
+
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        async function retrieveMessages() {
+            let response = await fetch(`http://localhost:3001/message`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+
+                },
+            });
+            if (response.status == 200) {
+                let data = await response.json();
+                console.log("API called successfully:", data)
+                for (let i = 0; i < data.length; i++) {
+                    div = document.createElement("div");
+                    div.innerHTML = data[i].message;
+                    document.getElementById("right-pane").appendChild(div);
+                }
+                var messageValue = document.getElementById("message").value
+
+            }
+        }
+        let socket;
+        socket = io();
+
+        socket.on("newConnectionEstablished", (message) => {
+            console.log(message);
+            let div = document.createElement("div");
+            div.innerHTML = message;
+            document.getElementById("right-pane").appendChild(div);
+});
+
+        socket.on("connectionClosed", (message) => {
+        console.log(message);
+        let div = document.createElement("div");
+        div.innerHTML = message;
+        document.getElementById("right-pane").appendChild(div);
+    });
+
+    socket.on("receivedMessage", (message) => {
+    console.log(message);
+    });
+
+
+        async function sendMessage() {
+        socket.emit('new_message', document.getElementById("message").value);
+        let message = document.getElementById("message").value;
+        let div = document.createElement("div");
+        div.innerHTML = message;
+    document.getElementById("right-pane").appendChild(div);
+    document.getElementById("message").value = "";
+
+    let response = await fetch(`http://localhost:3001/message`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "room": "Nodejs",
+                "message": message
+            })
+        });
+
+        if (response.status === 200) {
+            response = await response.json();
+            console.log("API called successfully.");
+        }
+    }
+
+    async function LeaveRoom() {
+        socket.on("disconnected", "User has disconnected")
+    let response = await fetch(`http://localhost:3001/user/log-out`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            user: window.localStorage.getItem('token')
+        })
+    });
+
+    if (response.ok) {
+        response = await response.json();
+        console.log("API called successfully.");
+
+        window.localStorage.removeItem('token');
+        document.location.href = "./registration.html";
+    }
+}
+    </script>
+</body>
+
+</html>
